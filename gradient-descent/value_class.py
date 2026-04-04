@@ -4,10 +4,15 @@ class Value:
         self.grad = 0.0
         self._prev = set(_children)
         self._op = _ops
+        self._backward = lambda: None
 
     def __add__(self, other):
         addition = self.data + other.data
         return Value(addition, (self, other), "+")
+
+        def _backward():
+            
+
 
     def __mul__(self, other):
         multiplication = self.data * other.data
@@ -21,4 +26,4 @@ a = Value(8)
 b = Value(12)
 c = a * b
 c += b
-print(c._prev)
+print(c._prev) 
