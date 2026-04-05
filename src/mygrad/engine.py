@@ -10,6 +10,7 @@ class Value:
         self._backward = lambda: None
 
     def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         addition = self.data + other.data
         out = Value(addition, (self, other), "+")
 
@@ -21,7 +22,21 @@ class Value:
 
         return out
 
+    def __radd__(self, other):
+        return self + other
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
     def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         multiplication = self.data * other.data
         out = Value(multiplication, (self, other), "*")
 
@@ -32,6 +47,9 @@ class Value:
         out._backward = _backward
 
         return out
+
+    def __rmul__(self, other):
+        return self * other
 
     def tanh(self):
         x = self.data
@@ -66,3 +84,7 @@ class Value:
 
         for node in reversed(topo):
             node._backward()
+
+
+a = Value(5)
+print(2 - a)
