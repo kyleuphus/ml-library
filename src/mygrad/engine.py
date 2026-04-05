@@ -12,12 +12,13 @@ class Value:
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         addition = self.data + other.data
-        out = Value(addition, (self, other), "+")
+        out = Value(addition, (self, other))
 
         def _backward():
             self.grad += 1.0 * out.grad
             other.grad += 1.0 * out.grad
 
+        # passes correct backward function to out.
         out._backward = _backward
 
         return out
@@ -38,7 +39,7 @@ class Value:
     def __mul__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         multiplication = self.data * other.data
-        out = Value(multiplication, (self, other), "*")
+        out = Value(multiplication, (self, other))
 
         def _backward():
             self.grad += other.data * out.grad
@@ -50,6 +51,34 @@ class Value:
 
     def __rmul__(self, other):
         return self * other
+
+    def __truediv__(self, other):
+        return self * (other**-1)
+
+    def __rtruediv__(self, other):
+        return other * (self**-1)
+
+    def exp(self):
+        out = Value(math.exp(self.data), (self,), "exp")
+
+        def _backward():
+            self.grad += out.data * out.grad
+
+        out._backward = _backward
+
+        return out
+
+    def __pow__(self, other):
+        power = self.data ** (other)
+        out = Value(power, (self,), f"**{other}")
+
+        def _backward():
+            local_derivative = other * self.data ** (other - 1)
+            self.grad += local_derivative * out.grad
+
+        out._backward = _backward
+
+        return out
 
     def tanh(self):
         x = self.data
@@ -84,7 +113,3 @@ class Value:
 
         for node in reversed(topo):
             node._backward()
-
-
-a = Value(5)
-print(2 - a)
