@@ -1,0 +1,12 @@
+[tuild-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mygrad"
+version = "0.1.0"
+description = "A custom from-scratch autograd engine"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

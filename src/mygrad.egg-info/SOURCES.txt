@@ -1,0 +1,14 @@
+pyproject.toml
+src/mygrad/__init__.py
+src/mygrad/engine.py
+src/mygrad.egg-info/PKG-INFO
+src/mygrad.egg-info/SOURCES.txt
+src/mygrad.egg-info/dependency_links.txt
+src/mygrad.egg-info/top_level.txt
+src/mygrad/nn/__init__.py
+src/mygrad/nn/layers.py
+src/mygrad/nn/module.py
+src/mygrad/nn/parameter.py
+src/mygrad/optim/__init__.py
+src/mygrad/optim/sgd.py
+tests/test_engine.py
