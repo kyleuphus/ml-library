@@ -69,6 +69,8 @@ class Value:
         return out
 
     def __pow__(self, other):
+
+        # only accepts ints and floats (no Value objects)
         power = self.data ** (other)
         out = Value(power, (self,), f"**{other}")
 
@@ -104,7 +106,7 @@ class Value:
     def __repr__(self):
         return f"Value(data={self.data})"
 
-    # depth first search for topoligical list
+    # depth first search for topological list
     def backward(self):
         topo = []
         visited = set()
