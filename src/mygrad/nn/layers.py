@@ -1,0 +1,20 @@
+import random
+from mygrad.engine import Value
+
+
+class Neuron:
+    def __init__(self, nin, activation=None):
+        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
+        self.b = Value(random.uniform(-1, 1))
+        self.act = activation.lower() if activation else None
+
+    def __call__(self, x):
+        # weight * input for respective index in zipped tuple, adding to bias
+        activation = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+
+        if self.act == "tanh":
+            return activation.tanh()
+        elif self.act == "relu":
+            return activation.relu()
+        elif self.act in [None, "linear"]:
+            return activation
