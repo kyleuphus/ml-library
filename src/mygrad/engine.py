@@ -69,14 +69,31 @@ class Value:
         return out
 
     def __pow__(self, other):
-
-        # only accepts ints and floats (no Value objects)
         power = self.data ** (other)
         out = Value(power, (self,), f"**{other}")
 
         def _backward():
             local_derivative = other * self.data ** (other - 1)
             self.grad += local_derivative * out.grad
+
+        out._backward = _backward
+
+        return out
+
+    def __abs__(self):
+
+        def _backward():
+            if self.data > 0:
+                local_derivative = 1
+            elif self.data == 0:
+                local_derivative = 0
+            else:
+                local_derivative = -1
+
+            self.grad += local_derivative * out.grad
+
+        absolute = abs(self.data)
+        out = Value(absolute, (self,), f"|{self}|")
 
         out._backward = _backward
 

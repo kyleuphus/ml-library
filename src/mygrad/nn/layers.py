@@ -22,7 +22,7 @@ class Neuron:
 
 class Layer:
     def __init__(self, nin, nout):
-        self.neurons = [Neuron(nin) for _ in nout]
+        self.neurons = [Neuron(nin) for _ in range(nout)]
 
     def __call__(self, x):
         outputs = [n(x) for n in self.neurons]
