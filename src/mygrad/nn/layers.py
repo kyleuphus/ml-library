@@ -25,8 +25,8 @@ class Neuron(Module):
 
 
 class Layer(Module):
-    def __init__(self, nin, nout):
-        self.neurons = [Neuron(nin) for _ in range(nout)]
+    def __init__(self, nin, nout, activation):
+        self.neurons = [Neuron(nin, activation) for _ in range(nout)]
 
     def parameters(self):
         return [p for neuron in self.neurons for p in neuron.parameters()]
@@ -37,9 +37,16 @@ class Layer(Module):
 
 
 class MLP(Module):
-    def __init__(self, nin, nouts):
+    def __init__(self, nin, nouts, activation):
         size = [nin] + nouts
-        self.layers = [Layer(size[i], size[i + 1]) for i in range(len(nouts))]
+        self.layers = [
+            Layer(
+                size[i],
+                size[i + 1],
+                activation=None if i == len(nouts) - 1 else activation,
+            )
+            for i in range(len(nouts))
+        ]
 
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]

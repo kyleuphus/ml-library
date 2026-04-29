@@ -9,13 +9,13 @@ xs = [
 ]
 ys = [1.0, -1.0, -1.0, 1.0]
 
-model = MLP(2, [12, 12, 1])
+model = MLP(2, [12, 12, 1], "tanh")
 
 step = 0.005
 
 grad = SGD(model.parameters(), 0.001)
 
-for epoch in range(100):
+for epoch in range(1000):
     # forward pass
     ypred = [model(x)[0] for x in xs]
 
@@ -28,3 +28,5 @@ for epoch in range(100):
     grad.step()
 
     print(f"Epoch: {epoch}, Loss: {loss.data}")
+
+print(ypred)
