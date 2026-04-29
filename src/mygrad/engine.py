@@ -18,7 +18,7 @@ class Value:
             self.grad += 1.0 * out.grad
             other.grad += 1.0 * out.grad
 
-        # passes correct backward function to out
+        # passes correct backward function to out.
         out._backward = _backward
 
         return out

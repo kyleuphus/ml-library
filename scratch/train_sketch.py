@@ -32,7 +32,7 @@ for epoch in range(20):
     # zero gradients:
     for layer in model.layers:
         for neuron in layer.neurons:
-            for w in neuron.w:
+           for w in neuron.w:
                 w.grad = 0
             neuron.b.grad = 0
 

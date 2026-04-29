@@ -10,9 +10,9 @@ ys = [1.0, -1.0, -1.0, 1.0]
 
 model = MLP(2, [12, 12, 1])
 
-step = 0.01
+step = 0.005
 
-for epoch in range(10000):
+for epoch in range(1000):
     # forward pass
     ypred = [model(x)[0] for x in xs]
 

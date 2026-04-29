@@ -1,8 +1,9 @@
 import random
 from mygrad.engine import Value
+from mygrad.nn.module import Module
 
 
-class Neuron:
+class Neuron(Module):
     def __init__(self, nin, activation=None):
         self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
         self.b = Value(random.uniform(-1, 1))
@@ -23,7 +24,7 @@ class Neuron:
             return activation
 
 
-class Layer:
+class Layer(Module):
     def __init__(self, nin, nout):
         self.neurons = [Neuron(nin) for _ in range(nout)]
 
@@ -35,17 +36,13 @@ class Layer:
         return outputs
 
 
-class MLP:
+class MLP(Module):
     def __init__(self, nin, nouts):
         size = [nin] + nouts
         self.layers = [Layer(size[i], size[i + 1]) for i in range(len(nouts))]
 
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
-
-    def zero_grad(self):
-        for param in self.parameters():
-            param.grad = 0
 
     def __call__(self, x):
         for layer in self.layers:
