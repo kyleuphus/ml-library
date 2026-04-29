@@ -11,8 +11,6 @@ ys = [1.0, -1.0, -1.0, 1.0]
 
 model = MLP(2, [12, 12, 1], "tanh")
 
-step = 0.005
-
 grad = SGD(model.parameters(), 0.001)
 
 for epoch in range(1000):

@@ -68,7 +68,8 @@ def test_tanh():
 def test_MLP_forward():
     xs = [[2.0, 4.0], [1.5, 3.0]]
 
-    model = MLP(2, [1])
+    # none for linear mlp
+    model = MLP(2, [1], None)
 
     model_p = nn.Linear(2, 1)
 
