@@ -1,5 +1,5 @@
-from mygrad.nn import MLP
-from mygrad.optim import SGD
+from mygrad.scalar.nn import MLP
+from mygrad.scalar.optim import SGD
 
 xs = [
     [2.0, 3.0],

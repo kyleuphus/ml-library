@@ -1,6 +1,6 @@
 import random
-from mygrad.engine import Value
-from mygrad.nn.module import Module
+from mygrad.scalar.value import Value
+from mygrad.scalar.nn.module import Module
 
 
 class Neuron(Module):

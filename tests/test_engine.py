@@ -1,5 +1,5 @@
 import math
-from mygrad.engine import Value
+from mygrad.scalar.value import Value
 
 
 def test_add_basic():

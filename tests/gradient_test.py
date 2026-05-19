@@ -1,8 +1,8 @@
 import math
 import torch
 from torch import nn
-from mygrad.nn import MLP
-from mygrad.engine import Value
+from mygrad.scalar.nn import MLP
+from mygrad.scalar.value import Value
 
 
 def test_1():
