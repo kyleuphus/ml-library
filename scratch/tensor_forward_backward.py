@@ -1,4 +1,4 @@
-# --- 
+# ---
 # jupyter:
 #   jupytext:
 #     text_representation:
@@ -99,9 +99,6 @@ d_output = np.array([-16.77])
 
 # %%
 # checking against pytorch
-print(t_weights_two.data.shape)
-print(t_hidden_out.data.shape)
-print((t_weights_two @ t_hidden_out).data.shape)
 p_mse.backward()
 assert(np.allclose(d_weights_one, p_weights_one.grad.numpy()))
 assert(np.allclose(d_biases_one, p_biases_one.grad.numpy()))
@@ -110,6 +107,8 @@ assert(np.allclose(d_biases_two, p_biases_two.grad.numpy()))
 
 # %%
 t_mse.backward()
+print(d_weights_one)
+print(t_weights_one.grad)
 assert(np.allclose(d_weights_one, t_weights_one.grad))
 assert(np.allclose(d_biases_one, t_biases_one.grad))
 assert(np.allclose(d_weights_two, t_weights_two.grad))

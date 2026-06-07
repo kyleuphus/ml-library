@@ -33,7 +33,6 @@ class Tensor:
         out = Tensor(add, (self, other), "add")
 
         def _backward():
-            print(self.grad.shape, out.grad.shape, self._op, other._op)
             self.grad += unbroadcast(out.grad, self.data.shape)
             other.grad += unbroadcast(out.grad, other.data.shape)
 
@@ -48,6 +47,30 @@ class Tensor:
         def _backward():
             self.grad += unbroadcast(other.data * out.grad, self.grad.shape)
             other.grad += unbroadcast(self.data * out.grad, other.grad.shape)
+
+        out._backward = _backward
+
+        return out
+
+    def __truediv__(self, other):
+        other = other if isinstance(other, Tensor) else Tensor(np.array(other))
+        div = self.data / other.data
+        out = Tensor(div, (self, other), "div")
+
+        def _backward():
+            self.grad += 1 / other.data * out.grad
+            other.grad += -self.data / (other.data * other.data) * out.grad
+
+        out._backward = _backward
+
+        return out
+
+    def sum(self):
+        sum = self.data.sum()
+        out = Tensor(sum, (self,), "sum")
+
+        def _backward():
+            self.grad += np.ones_like(self.data) * out.grad
 
         out._backward = _backward
 
