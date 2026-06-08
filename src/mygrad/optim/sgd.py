@@ -1,5 +1,5 @@
 class SGD:
-    def __init__(self, params, lr=0.001):
+    def __init__(self, params, lr=0.0001):
         self.p = params
         self.lr = lr
 
