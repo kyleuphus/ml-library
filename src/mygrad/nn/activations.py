@@ -50,8 +50,9 @@ def leaky_relu(x: Tensor, alpha=0.01):
 
 
 def softmax(x: Tensor):
-    exp = np.exp(x.data)
-    exp_sum = exp.sum()
+    shifted = x.data - np.max(x.data, axis=1, keepdims=True)
+    exp = np.exp(shifted)
+    exp_sum = exp.sum(axis=1, keepdims=True)
     _softmax = exp / exp_sum
     out = Tensor(_softmax, (x,), "softmax")
 
