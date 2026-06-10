@@ -1,7 +1,6 @@
 from mygrad.engine import Tensor
 import numpy as np
-
-rng = np.random.default_rng()
+import math
 
 
 class Module:
@@ -21,8 +20,12 @@ class Module:
 
 class Linear(Module):
     def __init__(self, in_features: int, out_features: int):
-        self.weight = Tensor(rng.random(size=(in_features, out_features)))
-        self.bias = Tensor(rng.random(size=(out_features,)))
+        # xavier initialization
+        normalized = math.sqrt(6) / (math.sqrt(in_features + out_features))
+        self.weight = Tensor(
+            rng.uniform(-normalized, normalized, (in_features, out_features))
+        )
+        self.bias = Tensor(rng.uniform(-1 / in_features, 1 / in_features, out_features))
 
     def parameters(self):
         return [self.weight, self.bias]
@@ -32,10 +35,19 @@ class Linear(Module):
 
 
 class MLP(Module):
-    def __init__(self, in_features: int, hidden_features: list, out_features: int):
+    def __init__(
+        self,
+        in_features: int,
+        hidden_features: list,
+        out_features: int,
+        activation: callable,
+    ):
         dimensions = [in_features, *hidden_features, out_features]
         sizes = zip(dimensions, dimensions[1:])
+        self.activation = activation
         self.layers = []
+        global rng
+        rng = np.random.default_rng(42)
         for pair in sizes:
             self.layers.append(Linear(pair[0], pair[1]))
 
@@ -43,6 +55,12 @@ class MLP(Module):
         return [p for layer in self.layers for p in layer.parameters()]
 
     def forward(self, x):
+        i = 1
+        activation = self.activation
+        layers = len(self.layers)
         for layer in self.layers:
             x = layer(x)
+            if i != layers:
+                x = activation(x)
+            i += 1
         return x
