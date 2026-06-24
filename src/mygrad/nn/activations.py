@@ -36,6 +36,9 @@ def sigmoid(x: Tensor):
     def _backward():
         x.grad += (out.data * (1 - out.data)) * out.grad
 
+    out._backward = _backward
+    return out
+
 
 def leaky_relu(x: Tensor, alpha=0.01):
     lrelu = np.where(x.data < 0, x.data * alpha, x.data)
