@@ -1,80 +1,92 @@
-# mygrad
+# mygrad — NumPy Autodiff and Neural Network Library
 
-A small deep-learning library built from scratch in Python — a reverse-mode automatic differentiation engine plus the neural-network layers, losses, and optimizer needed to train real models on top of it. The goal was to understand how frameworks like PyTorch actually work by rebuilding the core myself, not just calling `loss.backward()`.
+mygrad implements reverse-mode automatic differentiation and a small neural network library in Python. I started with a scalar engine, then built a NumPy-backed tensor engine to compute gradients for entire batches. The tensor engine trains a 235,146-parameter MNIST classifier to **97.5% accuracy on 14,000 held-out images** using the recipe below.
 
-Trained on MNIST, a multi-layer perceptron built entirely on this engine reaches **~97.8% test accuracy**.
+- **Autodiff.** Each operation records its inputs and a local backward rule. A reverse-topological traversal accumulates contributions from every path through the computation graph. [Tensor engine](src/mygrad/engine.py)
+- **Batched gradients.** A dense layer applies `X @ W + b` to a batch at once. Backpropagation sums the gradient over the examples that share the same bias vector. [Dense layers](src/mygrad/nn/mlp.py)
+- **Training.** The library provides dense layers with Xavier initialization, a configurable MLP, activation and loss functions, and mini-batch SGD with shuffling and optional learning-rate decay. [Training loop](src/mygrad/training/loop.py) · [Optimizer](src/mygrad/optim/sgd.py)
 
-## What it demonstrates
+## Quick start
 
-- **Reverse-mode autodiff from first principles** — a `Tensor` type that records a computation graph during the forward pass and walks it in reverse-topological order to accumulate gradients.
-- **Correct gradient math, including broadcasting.** Each operation defines its own local backward rule; an `unbroadcast` step reduces gradients back to the original operand shapes so element-wise ops and bias terms differentiate correctly.
-- **A PyTorch-style API** built on top: `Module`, `Linear`, `MLP`, activation functions, loss functions, and an SGD optimizer with a mini-batch training loop.
-- **Verified against PyTorch.** Gradients were checked against PyTorch's autograd as the ground-truth baseline.
+From the repository root on macOS or Linux, create an environment and install NumPy:
 
-The project evolved in two stages, both preserved in the repo: it began as a scalar-valued engine in the spirit of [micrograd](https://github.com/karpathy/micrograd) (now in `archive/scalar/`), then graduated to a vectorized, NumPy-backed tensor engine that supports batched training (`src/mygrad/`).
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install numpy
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
+```
 
-## Features
+Run this example from the same directory. It differentiates a sum of squares through a bias shared by two rows.
 
-**Autograd engine** (`src/mygrad/engine.py`)
-- `Tensor` wrapping a NumPy array, with `.data`, `.grad`, and a recorded graph
-- Operations: matmul, add, subtract, multiply, divide, negate, sum, log — each with its own backward rule
-- Broadcasting-aware gradient accumulation
-- Topological-sort backward pass
-
-**Neural network** (`src/mygrad/nn/`)
-- `Module` base class with `parameters()` and `zero_grad()`
-- `Linear` layer with Xavier (Glorot) weight initialization
-- `MLP` — configurable depth/width feed-forward network
-- Activations: ReLU, Leaky ReLU, tanh, sigmoid, softmax
-- Losses: MSE, binary cross-entropy, categorical cross-entropy, and a fused softmax–cross-entropy (with the simplified `softmax(x) - target` gradient)
-
-**Optimization & training** (`src/mygrad/optim/`, `src/mygrad/training/`)
-- SGD optimizer
-- Mini-batch training loop with per-epoch shuffling and learning-rate decay
-
-## Quickstart
-
-```python
+```bash
+python - <<'PY'
 import numpy as np
 from mygrad.engine import Tensor
-from mygrad.nn.mlp import MLP
+
+x = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]))
+bias = Tensor(np.array([0.5, -0.5]))
+y = x + bias
+loss = (y * y).sum()
+loss.grad = np.ones_like(loss.data)
+loss.backward()
+
+np.testing.assert_allclose(bias.grad, [10.0, 10.0])
+print(bias.grad)  # [10. 10.]
+PY
+```
+
+The caller seeds the output gradient before calling `backward()`. Use floating-point tensors for inputs that participate in differentiation.
+
+## Reproduce the MNIST result
+
+The run below correctly classified **13,649 of 14,000** held-out images with Python 3.13.7, NumPy 2.4.4, and scikit-learn 1.9.0. It uses a shuffled 80/20 split of OpenML's 70,000-image MNIST dataset. Scikit-learn loads and splits the dataset. mygrad implements the network, loss, backpropagation, and parameter updates.
+
+From the same environment and repository root, install scikit-learn and run the recipe. The first run downloads the dataset from OpenML.
+
+```bash
+python -m pip install scikit-learn
+python - <<'PY'
+import numpy as np
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+from mygrad.engine import Tensor
 from mygrad.nn.activations import relu
 from mygrad.nn.losses import softmax_cross_entropy
+from mygrad.nn.mlp import MLP
 from mygrad.training.loop import train
 
-# 784 -> 256 -> 128 -> 10 classifier
-mlp = MLP(784, [256, 128], 10, activation=relu)
+np.random.seed(42)
+pixels, labels = fetch_openml("mnist_784", version=1, as_frame=False, return_X_y=True)
+x_train, x_test, y_train, y_test = train_test_split(
+    pixels.astype(np.float64) / 255.0, labels.astype(int),
+    test_size=0.2, random_state=42,
+)
 
-train(mlp, X_train, y_train, softmax_cross_entropy,
-      lr=0.01, epochs=30, batch_size=64)
+model = MLP(784, [256, 128], 10, activation=relu)
+train(model, x_train, np.eye(10)[y_train], softmax_cross_entropy,
+      lr=0.01, epochs=80, batch_size=64)
 
-preds = np.argmax(mlp(Tensor(X_test)).data, axis=1)
+predicted = model(Tensor(x_test)).data.argmax(axis=1)
+print(f"Held-out accuracy: {(predicted == y_test).mean():.2%}")
+PY
 ```
 
-Worked end-to-end examples are in [`examples/`](examples/):
-- `examples/mnist.py` — handwritten-digit classification (~97.8% test accuracy)
-- `examples/iris.py` — the Iris dataset
+## How backpropagation works
 
-## Project structure
+1. **Record the forward pass.** Each `Tensor` stores its data, gradient buffer, parent tensors, and a backward function. For example, `Y = X @ W + b` creates separate nodes for matrix multiplication and addition.
+2. **Walk the graph backward.** Depth-first search visits each node once. Running the backward functions in reverse-topological order ensures a shared node receives all contributions before propagating them to its inputs.
+3. **Reduce broadcast gradients.** Each example uses the same bias. The addition rule reduces the batch-shaped gradient back to the bias vector's shape by summing across the batch.
+4. **Update parameters.** The training loop clears the parameter gradients, computes the loss, seeds the output gradient, and calls backpropagation. SGD then updates the weights in place.
 
-```
-src/mygrad/
-  engine.py            # Tensor + autograd
-  nn/
-    mlp.py             # Module, Linear, MLP
-    activations.py     # relu, tanh, sigmoid, leaky_relu, softmax
-    losses.py          # mse, cross-entropy variants
-  optim/sgd.py         # SGD
-  training/loop.py     # mini-batch training loop
-archive/scalar/        # earlier scalar-valued (micrograd-style) engine
-examples/              # MNIST and Iris training scripts
-tests/                 # gradient checks against PyTorch
-```
+## Verification and scope
 
-## Scope & limitations
-
-This is an educational library. It's NumPy-backed and prioritizes clarity over speed — there's no GPU support, no convolution layers, and a single optimizer.
+- The quick start checks a concrete bias gradient, and the MNIST recipe checks the full training path with held-out data.
+- The [legacy tests](tests/) compare parts of the original scalar engine with finite differences and PyTorch. Their imports still reference the scalar engine's old location, and they currently fail during collection. The [scalar implementation](archive/scalar/) is preserved for reference.
+- The tensor implementation targets CPU-based dense networks. The bundled training path uses the fused softmax-cross-entropy backward rule. Standalone softmax backpropagation and some mixed-rank broadcasting cases need further work. The fused loss currently prints a batch sum and uses a batch-averaged gradient, so its logged value depends on the batch size.
+- [The MNIST script](examples/mnist.py) and [Iris notebook](examples/iris.ipynb) record earlier experiments. Use the recipe above to reproduce the reported MNIST result.
 
 ## References
 
-Built while studying [micrograd](https://github.com/karpathy/micrograd), the [PyTorch autograd internals](https://pytorch.org/docs/stable/notes/autograd.html), and [tinygrad](https://github.com/tinygrad/tinygrad).
+The scalar engine was inspired by [micrograd](https://github.com/karpathy/micrograd). I also used [PyTorch's autograd notes](https://pytorch.org/docs/stable/notes/autograd.html) and [tinygrad](https://github.com/tinygrad/tinygrad) as learning references.
+
