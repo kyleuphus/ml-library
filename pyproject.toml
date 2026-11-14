@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mygrad"
 version = "0.1.0"
 description = "A custom from-scratch autograd engine"
-dependencies = []
+dependencies = ["numpy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
