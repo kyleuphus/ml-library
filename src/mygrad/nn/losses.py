@@ -1,6 +1,6 @@
 import numpy as np
 from mygrad.engine import Tensor
-from src.mygrad.nn.activations import softmax
+from mygrad.nn.activations import softmax
 
 
 def mse(out: Tensor, target: Tensor):
